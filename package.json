@@ -12,7 +12,8 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Productivity"
   ],
   "keywords": [
     "terminal",
