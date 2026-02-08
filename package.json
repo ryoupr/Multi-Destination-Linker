@@ -7,16 +7,27 @@
     "type": "git",
     "url": "https://github.com/ryoupr/Multi-Destination-Linker"
   },
-  "version": "0.4.0",
+  "version": "0.5.0",
   "engines": {
     "vscode": "^1.95.0"
   },
-  "categories": ["Other"],
-  "keywords": [
-    "terminal", "link", "regex", "quickpick",
-    "jira", "backlog", "issue", "multi-destination", "terminal-link"
+  "categories": [
+    "Other"
   ],
-  "activationEvents": ["onStartupFinished"],
+  "keywords": [
+    "terminal",
+    "link",
+    "regex",
+    "quickpick",
+    "jira",
+    "backlog",
+    "issue",
+    "multi-destination",
+    "terminal-link"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "icon": "icon.png",
   "main": "./out/extension.js",
   "contributes": {
@@ -48,15 +59,27 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "label": { "type": "string", "description": "QuickPickに表示するラベル" },
-                    "url": { "type": "string", "description": "開くURL。$0（マッチ全体）、$1, $2...がキャプチャグループに置換されます。" }
+                    "label": {
+                      "type": "string",
+                      "description": "QuickPickに表示するラベル"
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "開くURL。$0（マッチ全体）、$1, $2...がキャプチャグループに置換されます。"
+                    }
                   },
-                  "required": ["label", "url"]
+                  "required": [
+                    "label",
+                    "url"
+                  ]
                 },
                 "description": "遷移先の配列。"
               }
             },
-            "required": ["pattern", "links"]
+            "required": [
+              "pattern",
+              "links"
+            ]
           },
           "markdownDescription": "パターンと遷移先のルール配列。コマンドパレットから `Multi-Destination-Linker: Add Rule` で対話的に追加できます。\n\n```json\n\"multiDestinationLinker.rules\": [\n  {\n    \"pattern\": \"([A-Z][A-Z0-9]+-\\\\d+)\",\n    \"links\": [\n      { \"label\": \"Jiraで開く\", \"url\": \"https://example.atlassian.net/browse/$1\" },\n      { \"label\": \"Backlogで開く\", \"url\": \"https://example.backlog.jp/view/$1\" }\n    ]\n  }\n]\n```"
         }
