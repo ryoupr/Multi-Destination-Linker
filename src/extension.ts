@@ -7,11 +7,12 @@ interface LinkConfig {
 
 interface Rule {
   pattern: string;
+  tooltip?: string;
   links: LinkConfig[];
 }
 
 interface MatchedTerminalLink extends vscode.TerminalLink {
-  data: string;
+  data: RegExpExecArray;
   links: LinkConfig[];
 }
 
@@ -21,18 +22,48 @@ function getRules(): Rule[] {
     .get<Rule[]>("rules", []);
 }
 
-async function openLink(url: string, matchedText: string) {
-  const resolved = url.replace(/\$1/g, matchedText);
-  await vscode.env.openExternal(vscode.Uri.parse(resolved));
+function resolveUrl(url: string, match: RegExpExecArray): string {
+  return url.replace(/\$(\d+)/g, (_, i) => match[Number(i)] ?? "");
+}
+
+function showSetupGuide() {
+  vscode.window
+    .showInformationMessage(
+      "Multi-Destination-Linker: No rules configured.",
+      "Open Settings"
+    )
+    .then((choice) => {
+      if (choice) {
+        vscode.commands.executeCommand(
+          "workbench.action.openSettings",
+          "multiDestinationLinker.rules"
+        );
+      }
+    });
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  const rules = getRules();
+  if (rules.length === 0) {
+    showSetupGuide();
+  }
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("multiDestinationLinker.rules")) {
+        if (getRules().length === 0) {
+          showSetupGuide();
+        }
+      }
+    })
+  );
+
   const provider: vscode.TerminalLinkProvider<MatchedTerminalLink> = {
     provideTerminalLinks(terminalContext) {
-      const rules = getRules();
+      const currentRules = getRules();
       const linkMap = new Map<string, MatchedTerminalLink>();
 
-      for (const rule of rules) {
+      for (const rule of currentRules) {
         let regex: RegExp;
         try {
           regex = new RegExp(rule.pattern, "g");
@@ -45,19 +76,20 @@ export function activate(context: vscode.ExtensionContext) {
 
         let match: RegExpExecArray | null;
         while ((match = regex.exec(terminalContext.line)) !== null) {
-          const captured = match[1] ?? match[0];
           const key = `${match.index}:${match[0].length}`;
-
           const existing = linkMap.get(key);
           if (existing) {
             existing.links.push(...rule.links);
-            existing.tooltip = existing.links.map((l) => l.label).join(" / ");
+            if (!rule.tooltip) {
+              existing.tooltip = existing.links.map((l) => l.label).join(" / ");
+            }
           } else {
             linkMap.set(key, {
               startIndex: match.index,
               length: match[0].length,
-              tooltip: rule.links.map((l) => l.label).join(" / "),
-              data: captured,
+              tooltip:
+                rule.tooltip ?? rule.links.map((l) => l.label).join(" / "),
+              data: match,
               links: [...rule.links],
             });
           }
@@ -71,15 +103,17 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
       if (link.links.length === 1) {
-        await openLink(link.links[0].url, link.data);
+        const url = resolveUrl(link.links[0].url, link.data);
+        await vscode.env.openExternal(vscode.Uri.parse(url));
         return;
       }
       const picked = await vscode.window.showQuickPick(
         link.links.map((l) => ({ label: l.label, url: l.url })),
-        { placeHolder: `Open "${link.data}" with...` }
+        { placeHolder: `Open "${link.data[1] ?? link.data[0]}" with...` }
       );
       if (picked) {
-        await openLink(picked.url, link.data);
+        const url = resolveUrl(picked.url, link.data);
+        await vscode.env.openExternal(vscode.Uri.parse(url));
       }
     },
   };

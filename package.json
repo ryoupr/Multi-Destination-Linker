@@ -9,14 +9,21 @@
   },
   "version": "0.2.0",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.95.0"
   },
-  "categories": [
-    "Other"
+  "categories": ["Other", "Terminal"],
+  "keywords": [
+    "terminal",
+    "link",
+    "regex",
+    "quickpick",
+    "jira",
+    "backlog",
+    "issue",
+    "multi-destination",
+    "terminal-link"
   ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
+  "activationEvents": ["onStartupFinished"],
   "icon": "icon.png",
   "main": "./out/extension.js",
   "contributes": {
@@ -31,34 +38,26 @@
             "properties": {
               "pattern": {
                 "type": "string",
-                "description": "テキスト検出用の正規表現。キャプチャグループ $1 をURLに埋め込みます。"
+                "description": "テキスト検出用の正規表現。キャプチャグループ $0（マッチ全体）、$1, $2... をURLに埋め込めます。"
+              },
+              "tooltip": {
+                "type": "string",
+                "description": "リンクホバー時に表示するツールチップ。省略時は遷移先ラベル一覧を表示します。"
               },
               "links": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "label": {
-                      "type": "string",
-                      "description": "QuickPickに表示するラベル"
-                    },
-                    "url": {
-                      "type": "string",
-                      "description": "開くURL。$1 がマッチしたテキストに置換されます。"
-                    }
+                    "label": { "type": "string", "description": "QuickPickに表示するラベル" },
+                    "url": { "type": "string", "description": "開くURL。$0（マッチ全体）、$1, $2...がキャプチャグループに置換されます。" }
                   },
-                  "required": [
-                    "label",
-                    "url"
-                  ]
+                  "required": ["label", "url"]
                 },
                 "description": "遷移先の配列。"
               }
             },
-            "required": [
-              "pattern",
-              "links"
-            ]
+            "required": ["pattern", "links"]
           },
           "description": "パターンと遷移先のルール配列。パターンごとに異なる遷移先を設定できます。"
         }
