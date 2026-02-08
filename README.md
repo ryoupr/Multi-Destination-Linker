@@ -2,6 +2,15 @@
 
 VSCode拡張機能。ターミナル上のテキストを正規表現で検出しリンク化、クリック時にQuickPickで複数の遷移先から選択してブラウザで開きます。
 
+## インストール
+
+- VSCode の拡張機能パネルで `Multi-Destination-Linker` を検索してインストール
+- または: [Marketplace ページ](https://marketplace.visualstudio.com/items?itemName=ryoupr.multi-destination-linker) からインストール
+- またはコマンドラインから:
+```bash
+code --install-extension ryoupr.multi-destination-linker
+```
+
 ## 機能
 
 - ターミナル出力から正規表現にマッチするテキストを自動検出しリンク表示
