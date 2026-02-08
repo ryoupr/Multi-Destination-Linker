@@ -16,14 +16,37 @@ interface MatchedTerminalLink extends vscode.TerminalLink {
   links: LinkConfig[];
 }
 
+let cachedRules: Rule[] | null = null;
+
 function getRules(): Rule[] {
-  return vscode.workspace
+  if (cachedRules !== null) return cachedRules;
+  cachedRules = vscode.workspace
     .getConfiguration("multiDestinationLinker")
     .get<Rule[]>("rules", []);
+  return cachedRules;
+}
+
+function invalidateCache() {
+  cachedRules = null;
 }
 
 function resolveUrl(url: string, match: RegExpExecArray): string {
   return url.replace(/\$(\d+)/g, (_, i) => match[Number(i)] ?? "");
+}
+
+function safeExec(regex: RegExp, line: string): RegExpExecArray[] {
+  const results: RegExpExecArray[] = [];
+  const limit = 100;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while ((match = regex.exec(line)) !== null) {
+    results.push(match);
+    if (++count >= limit) break;
+    if (match[0].length === 0) {
+      regex.lastIndex++;
+    }
+  }
+  return results;
 }
 
 function showSetupGuide() {
@@ -46,7 +69,6 @@ function showSetupGuide() {
 }
 
 async function addRuleWizard() {
-  // 1. Pattern
   const pattern = await vscode.window.showInputBox({
     prompt: "Regex pattern (e.g. ([A-Z][A-Z0-9]+-\\d+) )",
     placeHolder: "([A-Z][A-Z0-9]+-\\d+)",
@@ -61,7 +83,6 @@ async function addRuleWizard() {
   });
   if (!pattern) return;
 
-  // 2. Links (loop)
   const links: LinkConfig[] = [];
   while (true) {
     const label = await vscode.window.showInputBox({
@@ -86,7 +107,6 @@ async function addRuleWizard() {
 
   if (links.length === 0) return;
 
-  // 3. Save
   const config = vscode.workspace.getConfiguration("multiDestinationLinker");
   const rules = [...getRules(), { pattern, links }];
   await config.update("rules", rules, vscode.ConfigurationTarget.Global);
@@ -108,6 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("multiDestinationLinker.rules")) {
+        invalidateCache();
         if (getRules().length === 0) {
           showSetupGuide();
         }
@@ -131,8 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
           continue;
         }
 
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(terminalContext.line)) !== null) {
+        for (const match of safeExec(regex, terminalContext.line)) {
           const key = `${match.index}:${match[0].length}`;
           const existing = linkMap.get(key);
           if (existing) {
