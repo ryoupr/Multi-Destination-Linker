@@ -30,29 +30,40 @@ export function activate(context: vscode.ExtensionContext) {
   const provider: vscode.TerminalLinkProvider<MatchedTerminalLink> = {
     provideTerminalLinks(terminalContext) {
       const rules = getRules();
-      const results: MatchedTerminalLink[] = [];
+      const linkMap = new Map<string, MatchedTerminalLink>();
 
       for (const rule of rules) {
         let regex: RegExp;
         try {
           regex = new RegExp(rule.pattern, "g");
-        } catch {
+        } catch (e) {
+          vscode.window.showWarningMessage(
+            `Multi-Destination-Linker: Invalid regex "${rule.pattern}": ${e instanceof Error ? e.message : e}`
+          );
           continue;
         }
 
         let match: RegExpExecArray | null;
         while ((match = regex.exec(terminalContext.line)) !== null) {
           const captured = match[1] ?? match[0];
-          results.push({
-            startIndex: match.index,
-            length: match[0].length,
-            tooltip: "Open link",
-            data: captured,
-            links: rule.links,
-          });
+          const key = `${match.index}:${match[0].length}`;
+
+          const existing = linkMap.get(key);
+          if (existing) {
+            existing.links.push(...rule.links);
+            existing.tooltip = existing.links.map((l) => l.label).join(" / ");
+          } else {
+            linkMap.set(key, {
+              startIndex: match.index,
+              length: match[0].length,
+              tooltip: rule.links.map((l) => l.label).join(" / "),
+              data: captured,
+              links: [...rule.links],
+            });
+          }
         }
       }
-      return results;
+      return [...linkMap.values()];
     },
 
     async handleTerminalLink(link: MatchedTerminalLink) {
@@ -65,7 +76,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
       const picked = await vscode.window.showQuickPick(
         link.links.map((l) => ({ label: l.label, url: l.url })),
-        { placeHolder: `${link.data} をどこで開きますか？` }
+        { placeHolder: `Open "${link.data}" with...` }
       );
       if (picked) {
         await openLink(picked.url, link.data);
