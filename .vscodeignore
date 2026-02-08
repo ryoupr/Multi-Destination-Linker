@@ -1,0 +1,13 @@
+.vscode/**
+.vscode-test/**
+.kiro/**
+src/**
+node_modules/**
+.gitignore
+tsconfig.json
+*.ts
+!out/**
+design.md
+requirements.md
+tasks.md
+2026-02-08-vscode-issue-link-extension-spec.md

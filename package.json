@@ -1,0 +1,51 @@
+{
+  "name": "multi-destination-linker",
+  "displayName": "Multi-Destination-Linker",
+  "description": "ターミナル上の課題キーをクリックし、QuickPickで遷移先を選択してブラウザで開く",
+  "publisher": "ryoupr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryoupr/Multi-Destination-Linker"
+  },
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "icon": "icon.png",
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Multi-Destination-Linker",
+      "properties": {
+        "multiDestinationLinker.pattern": {
+          "type": "string",
+          "default": "([A-Z][A-Z0-9]+-\\d+)",
+          "description": "課題キーを検出する正規表現。キャプチャグループ $1 をURLに埋め込みます。"
+        },
+        "multiDestinationLinker.links": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string", "description": "QuickPickに表示するラベル" },
+              "url": { "type": "string", "description": "開くURL。$1 が課題キーに置換されます。" }
+            },
+            "required": ["label", "url"]
+          },
+          "description": "遷移先の配列。label がQuickPickの表示名、url が開くURLです。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

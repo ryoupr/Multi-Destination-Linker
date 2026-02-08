@@ -1,0 +1,10 @@
+node_modules/
+out/
+*.vsix
+.DS_Store
+.kiro/
+.vscode/
+design.md
+requirements.md
+tasks.md
+2026-02-08-vscode-issue-link-extension-spec.md
