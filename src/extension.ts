@@ -5,16 +5,20 @@ interface LinkConfig {
   url: string;
 }
 
-interface MatchedTerminalLink extends vscode.TerminalLink {
-  data: string;
+interface Rule {
+  pattern: string;
+  links: LinkConfig[];
 }
 
-function getConfig() {
-  const cfg = vscode.workspace.getConfiguration("multiDestinationLinker");
-  return {
-    pattern: cfg.get<string>("pattern", "([A-Z][A-Z0-9]+-\\d+)"),
-    links: cfg.get<LinkConfig[]>("links", []),
-  };
+interface MatchedTerminalLink extends vscode.TerminalLink {
+  data: string;
+  links: LinkConfig[];
+}
+
+function getRules(): Rule[] {
+  return vscode.workspace
+    .getConfiguration("multiDestinationLinker")
+    .get<Rule[]>("rules", []);
 }
 
 async function openLink(url: string, matchedText: string) {
@@ -25,39 +29,42 @@ async function openLink(url: string, matchedText: string) {
 export function activate(context: vscode.ExtensionContext) {
   const provider: vscode.TerminalLinkProvider<MatchedTerminalLink> = {
     provideTerminalLinks(terminalContext) {
-      const { pattern } = getConfig();
-      let regex: RegExp;
-      try {
-        regex = new RegExp(pattern, "g");
-      } catch {
-        return [];
-      }
+      const rules = getRules();
+      const results: MatchedTerminalLink[] = [];
 
-      const links: MatchedTerminalLink[] = [];
-      let match: RegExpExecArray | null;
-      while ((match = regex.exec(terminalContext.line)) !== null) {
-        const captured = match[1] ?? match[0];
-        links.push({
-          startIndex: match.index,
-          length: match[0].length,
-          tooltip: "Open issue link",
-          data: captured,
-        });
+      for (const rule of rules) {
+        let regex: RegExp;
+        try {
+          regex = new RegExp(rule.pattern, "g");
+        } catch {
+          continue;
+        }
+
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(terminalContext.line)) !== null) {
+          const captured = match[1] ?? match[0];
+          results.push({
+            startIndex: match.index,
+            length: match[0].length,
+            tooltip: "Open link",
+            data: captured,
+            links: rule.links,
+          });
+        }
       }
-      return links;
+      return results;
     },
 
     async handleTerminalLink(link: MatchedTerminalLink) {
-      const { links } = getConfig();
-      if (links.length === 0) {
+      if (link.links.length === 0) {
         return;
       }
-      if (links.length === 1) {
-        await openLink(links[0].url, link.data);
+      if (link.links.length === 1) {
+        await openLink(link.links[0].url, link.data);
         return;
       }
       const picked = await vscode.window.showQuickPick(
-        links.map((l) => ({ label: l.label, url: l.url })),
+        link.links.map((l) => ({ label: l.label, url: l.url })),
         { placeHolder: `${link.data} をどこで開きますか？` }
       );
       if (picked) {

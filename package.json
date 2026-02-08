@@ -11,44 +11,40 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
   "icon": "icon.png",
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
       "title": "Multi-Destination-Linker",
       "properties": {
-        "multiDestinationLinker.pattern": {
-          "type": "string",
-          "default": "([A-Z][A-Z0-9]+-\\d+)",
-          "description": "テキスト検出用の正規表現。キャプチャグループ $1 をURLに埋め込みます。"
-        },
-        "multiDestinationLinker.links": {
+        "multiDestinationLinker.rules": {
           "type": "array",
           "default": [],
           "items": {
             "type": "object",
             "properties": {
-              "label": {
+              "pattern": {
                 "type": "string",
-                "description": "QuickPickに表示するラベル"
+                "description": "テキスト検出用の正規表現。キャプチャグループ $1 をURLに埋め込みます。"
               },
-              "url": {
-                "type": "string",
-                "description": "開くURL。$1 がマッチしたテキストに置換されます。"
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": { "type": "string", "description": "QuickPickに表示するラベル" },
+                    "url": { "type": "string", "description": "開くURL。$1 がマッチしたテキストに置換されます。" }
+                  },
+                  "required": ["label", "url"]
+                },
+                "description": "遷移先の配列。"
               }
             },
-            "required": [
-              "label",
-              "url"
-            ]
+            "required": ["pattern", "links"]
           },
-          "description": "遷移先の配列。label がQuickPickの表示名、url が開くURLです。"
+          "description": "パターンと遷移先のルール配列。パターンごとに異なる遷移先を設定できます。"
         }
       }
     }
