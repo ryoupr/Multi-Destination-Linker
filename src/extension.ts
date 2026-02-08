@@ -5,7 +5,7 @@ interface LinkConfig {
   url: string;
 }
 
-interface IssueTerminalLink extends vscode.TerminalLink {
+interface MatchedTerminalLink extends vscode.TerminalLink {
   data: string;
 }
 
@@ -17,13 +17,13 @@ function getConfig() {
   };
 }
 
-async function openLink(url: string, issueKey: string) {
-  const resolved = url.replace(/\$1/g, issueKey);
+async function openLink(url: string, matchedText: string) {
+  const resolved = url.replace(/\$1/g, matchedText);
   await vscode.env.openExternal(vscode.Uri.parse(resolved));
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const provider: vscode.TerminalLinkProvider<IssueTerminalLink> = {
+  const provider: vscode.TerminalLinkProvider<MatchedTerminalLink> = {
     provideTerminalLinks(terminalContext) {
       const { pattern } = getConfig();
       let regex: RegExp;
@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
         return [];
       }
 
-      const links: IssueTerminalLink[] = [];
+      const links: MatchedTerminalLink[] = [];
       let match: RegExpExecArray | null;
       while ((match = regex.exec(terminalContext.line)) !== null) {
         const captured = match[1] ?? match[0];
@@ -47,7 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
       return links;
     },
 
-    async handleTerminalLink(link: IssueTerminalLink) {
+    async handleTerminalLink(link: MatchedTerminalLink) {
       const { links } = getConfig();
       if (links.length === 0) {
         return;

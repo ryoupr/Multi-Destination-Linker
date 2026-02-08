@@ -36,7 +36,7 @@ VSCode拡張機能。ターミナル上のテキストを正規表現で検出�
 
 ## 活用例
 
-- 課題キー（`PROJ-123`）→ Jira / Backlog / GitHub Issues で開く
+- 課題キー（`PROJ-123`）→ Jira / Backlog で開く
 - PR番号（`#456`）→ GitHub / GitLab で開く
 - エラーコード → 社内Wiki / Stack Overflow で検索
 - ドメイン名 → 本番環境 / ステージング環境で開く

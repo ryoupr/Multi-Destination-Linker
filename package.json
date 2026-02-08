@@ -22,7 +22,7 @@
         "multiDestinationLinker.pattern": {
           "type": "string",
           "default": "([A-Z][A-Z0-9]+-\\d+)",
-          "description": "課題キーを検出する正規表現。キャプチャグループ $1 をURLに埋め込みます。"
+          "description": "テキスト検出用の正規表現。キャプチャグループ $1 をURLに埋め込みます。"
         },
         "multiDestinationLinker.links": {
           "type": "array",
@@ -31,7 +31,7 @@
             "type": "object",
             "properties": {
               "label": { "type": "string", "description": "QuickPickに表示するラベル" },
-              "url": { "type": "string", "description": "開くURL。$1 が課題キーに置換されます。" }
+              "url": { "type": "string", "description": "開くURL。$1 がマッチしたテキストに置換されます。" }
             },
             "required": ["label", "url"]
           },
