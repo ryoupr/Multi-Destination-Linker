@@ -1,10 +1,10 @@
 # Multi-Destination-Linker
 
-VSCode拡張機能。ターミナル上の課題キー（Jira, Backlog等）をクリックし、複数の遷移先からQuickPickで選択してブラウザで開きます。
+VSCode拡張機能。ターミナル上のテキストを正規表現で検出しリンク化、クリック時にQuickPickで複数の遷移先から選択してブラウザで開きます。
 
 ## 機能
 
-- ターミナル出力から課題キー（例: `PROJ-123`）を自動検出しリンク表示
+- ターミナル出力から正規表現にマッチするテキストを自動検出しリンク表示
 - クリック時にQuickPickで遷移先を選択
 - 遷移先が1つの場合は直接ブラウザで開く
 - 正規表現・遷移先は `settings.json` で自由にカスタマイズ可能
@@ -31,13 +31,20 @@ VSCode拡張機能。ターミナル上の課題キー（Jira, Backlog等）を�
 
 | 設定キー | 説明 |
 |---|---|
-| `multiDestinationLinker.pattern` | 課題キー検出用の正規表現。`$1`（キャプチャグループ）がURLに埋め込まれます |
+| `multiDestinationLinker.pattern` | テキスト検出用の正規表現。キャプチャグループ `$1` がURLに埋め込まれます |
 | `multiDestinationLinker.links` | 遷移先の配列。`label` はQuickPickの表示名、`url` は開くURL |
+
+## 活用例
+
+- 課題キー（`PROJ-123`）→ Jira / Backlog / GitHub Issues で開く
+- PR番号（`#456`）→ GitHub / GitLab で開く
+- エラーコード → 社内Wiki / Stack Overflow で検索
+- ドメイン名 → 本番環境 / ステージング環境で開く
 
 ## 使い方
 
 1. 上記の設定を `settings.json` に追加
-2. ターミナルで課題キーが表示されると自動的にリンクになる
+2. ターミナルでパターンにマッチするテキストが表示されると自動的にリンクになる
 3. リンクをクリック（またはCtrl/Cmd+クリック）
 4. 遷移先が複数ある場合はQuickPickから選択
 5. ブラウザで該当ページが開く
