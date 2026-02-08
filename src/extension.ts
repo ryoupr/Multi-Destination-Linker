@@ -11,23 +11,43 @@ interface Rule {
   links: LinkConfig[];
 }
 
+interface CompiledRule {
+  regex: RegExp;
+  tooltip?: string;
+  links: LinkConfig[];
+}
+
 interface MatchedTerminalLink extends vscode.TerminalLink {
   data: RegExpExecArray;
   links: LinkConfig[];
 }
 
-let cachedRules: Rule[] | null = null;
+let compiledRules: CompiledRule[] | null = null;
 
-function getRules(): Rule[] {
-  if (cachedRules !== null) return cachedRules;
-  cachedRules = vscode.workspace
+function getCompiledRules(): CompiledRule[] {
+  if (compiledRules !== null) return compiledRules;
+  const raw = vscode.workspace
     .getConfiguration("multiDestinationLinker")
     .get<Rule[]>("rules", []);
-  return cachedRules;
+  compiledRules = [];
+  for (const rule of raw) {
+    try {
+      compiledRules.push({
+        regex: new RegExp(rule.pattern, "g"),
+        tooltip: rule.tooltip,
+        links: rule.links,
+      });
+    } catch (e) {
+      vscode.window.showWarningMessage(
+        `Multi-Destination-Linker: Invalid regex "${rule.pattern}": ${e instanceof Error ? e.message : e}`
+      );
+    }
+  }
+  return compiledRules;
 }
 
 function invalidateCache() {
-  cachedRules = null;
+  compiledRules = null;
 }
 
 function resolveUrl(url: string, match: RegExpExecArray): string {
@@ -35,6 +55,7 @@ function resolveUrl(url: string, match: RegExpExecArray): string {
 }
 
 function safeExec(regex: RegExp, line: string): RegExpExecArray[] {
+  regex.lastIndex = 0;
   const results: RegExpExecArray[] = [];
   const limit = 100;
   let match: RegExpExecArray | null;
@@ -108,16 +129,17 @@ async function addRuleWizard() {
   if (links.length === 0) return;
 
   const config = vscode.workspace.getConfiguration("multiDestinationLinker");
-  const rules = [...getRules(), { pattern, links }];
-  await config.update("rules", rules, vscode.ConfigurationTarget.Global);
+  const raw = vscode.workspace
+    .getConfiguration("multiDestinationLinker")
+    .get<Rule[]>("rules", []);
+  await config.update("rules", [...raw, { pattern, links }], vscode.ConfigurationTarget.Global);
   vscode.window.showInformationMessage(
     `Rule added: "${pattern}" → ${links.length} link(s)`
   );
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const rules = getRules();
-  if (rules.length === 0) {
+  if (getCompiledRules().length === 0) {
     showSetupGuide();
   }
 
@@ -129,7 +151,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("multiDestinationLinker.rules")) {
         invalidateCache();
-        if (getRules().length === 0) {
+        if (getCompiledRules().length === 0) {
           showSetupGuide();
         }
       }
@@ -138,21 +160,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   const provider: vscode.TerminalLinkProvider<MatchedTerminalLink> = {
     provideTerminalLinks(terminalContext) {
-      const currentRules = getRules();
+      const rules = getCompiledRules();
       const linkMap = new Map<string, MatchedTerminalLink>();
 
-      for (const rule of currentRules) {
-        let regex: RegExp;
-        try {
-          regex = new RegExp(rule.pattern, "g");
-        } catch (e) {
-          vscode.window.showWarningMessage(
-            `Multi-Destination-Linker: Invalid regex "${rule.pattern}": ${e instanceof Error ? e.message : e}`
-          );
-          continue;
-        }
-
-        for (const match of safeExec(regex, terminalContext.line)) {
+      for (const rule of rules) {
+        for (const match of safeExec(rule.regex, terminalContext.line)) {
           const key = `${match.index}:${match[0].length}`;
           const existing = linkMap.get(key);
           if (existing) {
@@ -176,21 +188,27 @@ export function activate(context: vscode.ExtensionContext) {
     },
 
     async handleTerminalLink(link: MatchedTerminalLink) {
-      if (link.links.length === 0) {
-        return;
-      }
-      if (link.links.length === 1) {
-        const url = resolveUrl(link.links[0].url, link.data);
-        await vscode.env.openExternal(vscode.Uri.parse(url));
-        return;
-      }
-      const picked = await vscode.window.showQuickPick(
-        link.links.map((l) => ({ label: l.label, url: l.url })),
-        { placeHolder: `Open "${link.data[1] ?? link.data[0]}" with...` }
-      );
-      if (picked) {
-        const url = resolveUrl(picked.url, link.data);
-        await vscode.env.openExternal(vscode.Uri.parse(url));
+      try {
+        if (link.links.length === 0) {
+          return;
+        }
+        if (link.links.length === 1) {
+          const url = resolveUrl(link.links[0].url, link.data);
+          await vscode.env.openExternal(vscode.Uri.parse(url));
+          return;
+        }
+        const picked = await vscode.window.showQuickPick(
+          link.links.map((l) => ({ label: l.label, url: l.url })),
+          { placeHolder: `Open "${link.data[1] ?? link.data[0]}" with...` }
+        );
+        if (picked) {
+          const url = resolveUrl(picked.url, link.data);
+          await vscode.env.openExternal(vscode.Uri.parse(url));
+        }
+      } catch (e) {
+        vscode.window.showErrorMessage(
+          `Multi-Destination-Linker: Failed to open link: ${e instanceof Error ? e.message : e}`
+        );
       }
     },
   };
@@ -200,4 +218,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-export function deactivate() {}
+export function deactivate() {
+  compiledRules = null;
+}
