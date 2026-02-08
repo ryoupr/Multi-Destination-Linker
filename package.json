@@ -7,12 +7,16 @@
     "type": "git",
     "url": "https://github.com/ryoupr/Multi-Destination-Linker"
   },
-  "version": "0.0.2",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "icon": "icon.png",
   "main": "./out/extension.js",
   "contributes": {
@@ -34,15 +38,27 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "label": { "type": "string", "description": "QuickPickに表示するラベル" },
-                    "url": { "type": "string", "description": "開くURL。$1 がマッチしたテキストに置換されます。" }
+                    "label": {
+                      "type": "string",
+                      "description": "QuickPickに表示するラベル"
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "開くURL。$1 がマッチしたテキストに置換されます。"
+                    }
                   },
-                  "required": ["label", "url"]
+                  "required": [
+                    "label",
+                    "url"
+                  ]
                 },
                 "description": "遷移先の配列。"
               }
             },
-            "required": ["pattern", "links"]
+            "required": [
+              "pattern",
+              "links"
+            ]
           },
           "description": "パターンと遷移先のルール配列。パターンごとに異なる遷移先を設定できます。"
         }
