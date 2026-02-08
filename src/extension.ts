@@ -30,10 +30,13 @@ function showSetupGuide() {
   vscode.window
     .showInformationMessage(
       "Multi-Destination-Linker: No rules configured.",
+      "Add Rule",
       "Open Settings"
     )
     .then((choice) => {
-      if (choice) {
+      if (choice === "Add Rule") {
+        vscode.commands.executeCommand("multiDestinationLinker.addRule");
+      } else if (choice === "Open Settings") {
         vscode.commands.executeCommand(
           "workbench.action.openSettings",
           "multiDestinationLinker.rules"
@@ -42,11 +45,65 @@ function showSetupGuide() {
     });
 }
 
+async function addRuleWizard() {
+  // 1. Pattern
+  const pattern = await vscode.window.showInputBox({
+    prompt: "Regex pattern (e.g. ([A-Z][A-Z0-9]+-\\d+) )",
+    placeHolder: "([A-Z][A-Z0-9]+-\\d+)",
+    validateInput(value) {
+      try {
+        new RegExp(value);
+        return null;
+      } catch (e) {
+        return `Invalid regex: ${e instanceof Error ? e.message : e}`;
+      }
+    },
+  });
+  if (!pattern) return;
+
+  // 2. Links (loop)
+  const links: LinkConfig[] = [];
+  while (true) {
+    const label = await vscode.window.showInputBox({
+      prompt: `Link ${links.length + 1}: Label (e.g. "Open in Jira")`,
+      placeHolder: "Open in Jira",
+    });
+    if (!label) break;
+
+    const url = await vscode.window.showInputBox({
+      prompt: `Link ${links.length + 1}: URL ($0=full match, $1=group1)`,
+      placeHolder: "https://example.atlassian.net/browse/$1",
+    });
+    if (!url) break;
+
+    links.push({ label, url });
+
+    const more = await vscode.window.showQuickPick(["Add another link", "Done"], {
+      placeHolder: "Add another link to this rule?",
+    });
+    if (more !== "Add another link") break;
+  }
+
+  if (links.length === 0) return;
+
+  // 3. Save
+  const config = vscode.workspace.getConfiguration("multiDestinationLinker");
+  const rules = [...getRules(), { pattern, links }];
+  await config.update("rules", rules, vscode.ConfigurationTarget.Global);
+  vscode.window.showInformationMessage(
+    `Rule added: "${pattern}" → ${links.length} link(s)`
+  );
+}
+
 export function activate(context: vscode.ExtensionContext) {
   const rules = getRules();
   if (rules.length === 0) {
     showSetupGuide();
   }
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("multiDestinationLinker.addRule", addRuleWizard)
+  );
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
